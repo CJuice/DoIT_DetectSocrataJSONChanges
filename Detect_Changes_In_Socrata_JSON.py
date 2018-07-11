@@ -1,3 +1,14 @@
+"""
+Detect changes in the response json from Socrata for fixed datasets.
+
+Our open data inspector process is reporting variation in null counts for datasets that have not changed between runs
+of the process. In some cases, the data hasn't changed in any way for years. We are trying to determine if the issue
+is in the open data inspector process or the response json from Socrata. This script examines two datasets [as of
+20180711] that have shown a lot of variation in null counts. This issue does not occur in the majority of the datasets.
+The datasets examined by this script represent the few.
+"""
+#TODO: move to server, pip as needed, make daily cron task
+
 import requests
 import json
 import os
@@ -5,7 +16,6 @@ from collections import namedtuple
 import logging
 import time
 
-#TODO: move to server, pip as needed, make daily cron task
 def main():
     # VARIABLES
     Constant = namedtuple("Constant", ["value"])
@@ -19,7 +29,12 @@ def main():
 
     # FUNCTIONS
     def gather_comparison_files(file_folder):
-        #dict or list?
+        """
+        Inventory all comparison json files available present at a particular directory
+
+        :param file_folder: The path to the folder containing all of the comparison json files
+        :return: dictionary, key=file name, value=file path
+        """
         comparison_files = {}
         for dir, dirs, files in os.walk(file_folder):
             for file in files:
@@ -41,15 +56,22 @@ def main():
             response = requests.get(url)
         except Exception as e:
             if hasattr(e, "reason"):
-                print("build_datasets_inventory(): Failed to reach a server. Reason: {}".format(e.reason))
+                logging.error("build_datasets_inventory(): Failed to reach a server. Reason: {}".format(e.reason))
             elif hasattr(e, "code"):
-                print("build_datasets_inventory(): The server couldn't fulfill the request. Error Code: {}".format(e.code))
+                logging.error("build_datasets_inventory(): The server couldn't fulfill the request. Error Code: {}".format(e.code))
             exit()
         else:
             json_objects = response.json()
         return json_objects
 
     def get_applicable_comparison_datasets(master_comparison_dict, dataset_id):
+        """
+        Isolate the comparison files that are of the dataset being examined
+
+        :param master_comparison_dict: inventory of all comparison json files available
+        :param dataset_id: socrata dataset id, known as a 4 by 4
+        :return: list of comparison json files applicable to the dataset being examined
+        """
         applicable_files_list = []
         for key, value in master_comparison_dict.items():
             if dataset_id in key:
@@ -77,6 +99,14 @@ def main():
         return filecontents
 
     def write_json_to_file(date_time_filename_piece, dataset_id, json_objects):
+        """
+        Create a json file containing json objects from socrata
+
+        :param date_time_filename_piece:  parts of the file name to be created
+        :param dataset_id: socrata dataset id, 4 by 4
+        :param json_objects: json objects from socrata
+        :return: nothing
+        """
         filename = r"json_files\{}_{}.json".format(date_time_filename_piece, dataset_id)
         with open(filename, 'w') as outfile:
             json.dump(json_objects, outfile)
@@ -113,7 +143,7 @@ def main():
     # __________________________________________________________________
     # For when need to write a new json file for comparison use.
     if False:
-        date_time_filename_piece = "20180711_0830"
+        date_time_filename_piece = time.strftime("%Y%m%d_%H%M")
         for key, value in datasets_dict.items():
             dataset_id = key
             dataset_name, dataset_json_request_url = value
