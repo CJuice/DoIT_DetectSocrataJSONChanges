@@ -17,11 +17,11 @@ import logging
 import time
 
 def main():
+
     # VARIABLES
     Constant = namedtuple("Constant", ["value"])
         # constants
     ROOT_PROJECT_PATH = Constant(value=r"E:\DoIT_DetectSocrataJSONChanges")
-    COMPARISON_JSON_FILES_FOLDER = Constant(value=r"E:\DoIT_DetectSocrataJSONChanges\json_files")
     COMPARISON_JSON_FILES_FOLDER = Constant(value=os.path.join(ROOT_PROJECT_PATH.value, "json_files"))
     LOG_FILE = Constant(value=os.path.join(ROOT_PROJECT_PATH.value, r"log_files\LOG.log"))
         # other
