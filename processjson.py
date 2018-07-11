@@ -1,10 +1,33 @@
 import requests
 import json
-#TODO: Add logging, make daily cron task, output results with date and time stamp. move to server, pip as needed
+import os
+from collections import namedtuple
+import logging
+import time
 
-dataset_url = r"https://data.maryland.gov/resource/rqbf-ng6p.json?$limit=14000"
-comparison_json_file = r"E:\DoIT_DetectSocrataJSONChanges\json_files\20180710_0310.json"
+#TODO: move to server, pip as needed, make daily cron task
+
+# VARIABLES
+Constant = namedtuple("Constant", ["value"])
+    # constants
+COMPARISON_JSON_FILES_FOLDER = Constant(value=r"E:\DoIT_DetectSocrataJSONChanges\json_files")
+LOG_FILE = Constant(value=r"E:\DoIT_DetectSocrataJSONChanges\log_files\LOG.log")
+    # other
+datasets_dict = {"rqbf-ng6p": ("MEA SmartEnergy Renewable Energy",r"https://data.maryland.gov/resource/rqbf-ng6p.json?$limit=14000"),
+                 "3r6n-zh6e":("MEA SmartEnergy Transportation",r"https://data.maryland.gov/resource/3r6n-zh6e.json?$limit=4000")}
 # comparison_json_file = r"E:\DoIT_DetectSocrataJSONChanges\json_files\tester.json"
+
+
+# FUNCTIONS
+def gather_comparison_files(file_folder):
+    #dict or list?
+    comparison_files = {}
+    for dir, dirs, files in os.walk(file_folder):
+        for file in files:
+            file_parts = os.path.splitext(file)
+            if file_parts[1].lower() == ".json":
+                comparison_files[file_parts[0]] = os.path.join(dir, file)
+    return comparison_files
 
 def generate_json_object(dataset_url):
     """
@@ -25,9 +48,14 @@ def generate_json_object(dataset_url):
         exit()
     else:
         json_objects = response.json()
-    # with open(r'json_files\20180710_0310.json', 'w') as outfile:
-    #     json.dump(json_objects, outfile)
     return json_objects
+
+def get_applicable_comparison_datasets(master_comparison_dict, dataset_id):
+    applicable_files_list = []
+    for key, value in master_comparison_dict.items():
+        if dataset_id in key:
+            applicable_files_list.append((key, value))
+    return applicable_files_list
 
 def load_json(json_file_contents):
     """
@@ -49,19 +77,49 @@ def read_json_file(file_path):
         filecontents = file_handler.read()
     return filecontents
 
-response_json_object = generate_json_object(dataset_url=dataset_url)
-json_file_lines_list = read_json_file(file_path=comparison_json_file)
-file_json_object = load_json(json_file_lines_list)
-if len(response_json_object) == len(file_json_object):
-    for i in range(len(response_json_object)):
-        if response_json_object[i] != file_json_object[i]:
-            print(response_json_object[i])
-            print(file_json_object[i])
-            print("\n")
+def write_json_to_file(date_time_filename_piece, dataset_id, json_objects):
+    filename = r"json_files\{}_{}.json".format(date_time_filename_piece, dataset_id)
+    with open(filename, 'w') as outfile:
+        json.dump(json_objects, outfile)
+    return
+
+
+# FUNCTIONALITY
+logging.basicConfig(filename=LOG_FILE.value,level=logging.INFO)
+logging.info("{}".format(time.strftime("%Y%m%d_%H%M")))
+
+comparison_files_dict = gather_comparison_files(COMPARISON_JSON_FILES_FOLDER.value)
+for dataset_id, name_hyperlink_tuple in datasets_dict.items():
+    dataset_name, dataset_hyperlink = name_hyperlink_tuple
+    response_json_object = generate_json_object(dataset_url=dataset_hyperlink)
+    applicable_comparison_files = get_applicable_comparison_datasets(master_comparison_dict=comparison_files_dict, dataset_id=dataset_id)
+    for file_name, file_path in applicable_comparison_files:
+        json_file_lines_list = read_json_file(file_path=file_path)
+        file_json_object = load_json(json_file_lines_list)
+        if len(response_json_object) == len(file_json_object):
+            logging.info("JSON objects equal in length. {} \ {}".format(dataset_id, file_name))
+            for i in range(len(response_json_object)):
+                if response_json_object[i] != file_json_object[i]:
+                    logging.error("{}, Comparison File={}".format(dataset_id,file_name))
+                    logging.error("Socrata: {}".format(response_json_object[i]))
+                    logging.error("On File: {}".format(file_json_object[i]))
+                else:
+                    pass
         else:
-            pass
-else:
-    print("lengths of dictionaries not the same.")
-print(response_json_object == file_json_object)
+            logging.error("Lengths of JSON objects not equal.")
+            logging.error(dataset_id)
+            logging.error("Socrata: {}".format(len(response_json_object)))
+            logging.error("On File: {}".format(len(file_json_object)))
+        # print(response_json_object == file_json_object)
 
 
+
+# __________________________________________________________________
+# For when need to write a new json file for comparison use.
+# date_time_filename_piece = "20180711_0830"
+# for key, value in datasets_dict.items():
+#     dataset_id = key
+#     dataset_name, dataset_json_request_url = value
+#     response_json_object = generate_json_object(dataset_url=dataset_json_request_url)
+#     write_json_to_file(date_time_filename_piece=date_time_filename_piece, dataset_id=dataset_id, json_objects=response_json_object)
+# __________________________________________________________________
