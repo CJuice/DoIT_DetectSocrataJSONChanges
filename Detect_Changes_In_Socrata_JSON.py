@@ -27,7 +27,7 @@ def main():
     datasets_dict = {"rqbf-ng6p": ("MEA SmartEnergy Renewable Energy",r"https://data.maryland.gov/resource/rqbf-ng6p.json?$limit=14000"),
                      "3r6n-zh6e":("MEA SmartEnergy Transportation",r"https://data.maryland.gov/resource/3r6n-zh6e.json?$limit=4000"),
                      "6bgg-g7fx":("Reported Sewer Overflows", r"https://data.maryland.gov/resource/6bgg-g7fx.json?$limit=20000")}
-    make_new_comparison_json_file_and_exit = True
+    make_new_comparison_json_file_and_exit = False
 
     # FUNCTIONS
     def gather_comparison_files(file_folder):
