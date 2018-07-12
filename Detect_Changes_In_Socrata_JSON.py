@@ -7,7 +7,6 @@ is in the open data inspector process or the response json from Socrata. This sc
 20180711] that have shown a lot of variation in null counts. This issue does not occur in the majority of the datasets.
 The datasets examined by this script represent the few.
 """
-#TODO: move to server, pip as needed, make daily cron task
 
 import requests
 import json
@@ -26,8 +25,9 @@ def main():
     LOG_FILE = Constant(value=os.path.join(ROOT_PROJECT_PATH.value, r"log_files\LOG.log"))
         # other
     datasets_dict = {"rqbf-ng6p": ("MEA SmartEnergy Renewable Energy",r"https://data.maryland.gov/resource/rqbf-ng6p.json?$limit=14000"),
-                     "3r6n-zh6e":("MEA SmartEnergy Transportation",r"https://data.maryland.gov/resource/3r6n-zh6e.json?$limit=4000")}
-
+                     "3r6n-zh6e":("MEA SmartEnergy Transportation",r"https://data.maryland.gov/resource/3r6n-zh6e.json?$limit=4000"),
+                     "6bgg-g7fx":("Reported Sewer Overflows", r"https://data.maryland.gov/resource/6bgg-g7fx.json?$limit=20000")}
+    make_new_comparison_json_file_and_exit = True
 
     # FUNCTIONS
     def gather_comparison_files(file_folder):
@@ -114,6 +114,18 @@ def main():
             json.dump(json_objects, outfile)
         return
 
+    # __________________________________________________________________
+    # For when want to write new json file for comparison use.
+    if make_new_comparison_json_file_and_exit:
+        date_time_filename_piece = time.strftime("%Y%m%d_%H%M")
+        for key, value in datasets_dict.items():
+            dataset_id = key
+            dataset_name, dataset_json_request_url = value
+            response_json_object = generate_json_object(dataset_url=dataset_json_request_url)
+            write_json_to_file(date_time_filename_piece=date_time_filename_piece, dataset_id=dataset_id, json_objects=response_json_object)
+        exit()
+    # __________________________________________________________________
+
 
     # FUNCTIONALITY
     logging.basicConfig(filename=LOG_FILE.value,level=logging.INFO)
@@ -141,17 +153,6 @@ def main():
                 logging.error(dataset_id)
                 logging.error("Socrata: {}".format(len(response_json_object)))
                 logging.error("On File: {}".format(len(file_json_object)))
-
-    # __________________________________________________________________
-    # For when need to write a new json file for comparison use.
-    if False:
-        date_time_filename_piece = time.strftime("%Y%m%d_%H%M")
-        for key, value in datasets_dict.items():
-            dataset_id = key
-            dataset_name, dataset_json_request_url = value
-            response_json_object = generate_json_object(dataset_url=dataset_json_request_url)
-            write_json_to_file(date_time_filename_piece=date_time_filename_piece, dataset_id=dataset_id, json_objects=response_json_object)
-    # __________________________________________________________________
 
 if __name__ == "__main__":
     main()
