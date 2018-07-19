@@ -18,11 +18,11 @@ import time
 def main():
 
     # VARIABLES
-    Constant = namedtuple("Constant", ["value"])
+    CONSTANT = namedtuple("CONSTANT", ["value"])
         # constants
-    ROOT_PROJECT_PATH = Constant(value=r"E:\DoIT_DetectSocrataJSONChanges")
-    COMPARISON_JSON_FILES_FOLDER = Constant(value=os.path.join(ROOT_PROJECT_PATH.value, "json_files"))
-    LOG_FILE = Constant(value=os.path.join(ROOT_PROJECT_PATH.value, r"log_files\LOG.log"))
+    _ROOT_PROJECT_PATH = CONSTANT(value=os.path.dirname(__file__))
+    COMPARISON_JSON_FILES_FOLDER = CONSTANT(value=os.path.join(_ROOT_PROJECT_PATH.value, "json_files"))
+    LOG_FILE = CONSTANT(value=os.path.join(_ROOT_PROJECT_PATH.value, r"log_files\LOG.log"))
         # other
     datasets_dict = {"rqbf-ng6p": ("MEA SmartEnergy Renewable Energy",r"https://data.maryland.gov/resource/rqbf-ng6p.json?$limit=14000"),
                      "3r6n-zh6e":("MEA SmartEnergy Transportation",r"https://data.maryland.gov/resource/3r6n-zh6e.json?$limit=4000"),
